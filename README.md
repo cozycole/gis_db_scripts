@@ -22,11 +22,11 @@ Make the name be city\_state ex: detroit\_mi\_ai)
 ### Import to Postgres
 
 Import the following shapefiles into the db:
-    - Addresses
-    - Buildings
-    - Streets
-    - Neighborhoods (optional)
-    - Land Use (optional)
+- Addresses
+- Buildings
+- Streets
+- Neighborhoods (optional)
+- Land Use (optional)
 
  **ALWAYS STORE IN SRID 4326 THEN TRANFORM TO LOCAL SRID**
 ```
@@ -51,13 +51,13 @@ Execute script create\_tables.sql to create necessary tables.
 We will begin by getting all data from the shapefiles into the previously created tables.
 
 This involves two steps:
-    - Find all columns of the shapefile that have the data necessary for the columns of the preconfigured tables.
-    - Insert the columns into the the table while filtering based on if the given geometry intersects any of the neighborhood boundaries.
+- Find all columns of the shapefile that have the data necessary for the columns of the preconfigured tables.
+- Insert the columns into the the table while filtering based on if the given geometry intersects any of the neighborhood boundaries.
 
 Do this for the following tables:
-    - addresses
-    - streets
-    - buildings
+- addresses
+- streets
+- buildings
 
 ### Insert Neighborhoods
 No filtering is required for this. Choose the correct columns then insert into neighborhoods. Delete the raw table after.
@@ -75,6 +75,7 @@ FROM addresses_raw as ar
 JOIN neighborhoods as n
 ON ST_Intersects(ar.geom, n.geom);
 
+-- Delete Unspecified Addresses (e.g. 0 ABC ST.) 
 DELETE FROM addresses
 WHERE address LIKE '0 %';
 ```
@@ -158,4 +159,42 @@ USING intersecting_addrs as ia
 WHERE a.gid = ia.delete_gid
 ```
 
+### Delete Unit Numbers from Address and Cardinal Direction from Street name
+We want to be able to match an address to a street name based on the names.
+
+For example, address='1234 ABC ST' and st_name='ABC ST'
+Or in a more complex case '1234 ABC ST UNIT A' st_name='E ABC ST'
+
+Done on a case by case basis, but check addresses for any ending in a number or [A,B,C]
+Use regexp_replace to create new names for pairing, and create new column values if necessary.
+
 ## Create Request Points
+
+### Create Raw Req Point Table
+Execute **explode_street_db.sql** to load necessary functions.
+Then call:
+```
+SELECT insert_request_points(LOCAL SRID);
+
+WITH point_intersecting as (
+    SELECT rp2.gid as delete_gid FROM request_points as rp
+    JOIN request_points as rp2
+    ON st_intersects(rp.geom, rp2.geom)
+    WHERE rp.gid > rp2.gid
+)
+DELETE from request_points as rp
+USING point_intersecting as pi
+WHERE pi.delete_gid = rp.gid;
+```
+
+Now we want to pair the address points to the req_points.
+This is to further filter the request points such that the table only contains request_points the crawler will actually use.
+
+Load **tmp_close_req_points.sql** to load the function that will create a table that contains the closest request point per address.
+This includes the universal closest point as well as the closest req point closest on the same street as the address.
+```
+-- First test to ensure indexes are functioning properly
+SELECT test_find_closest_points('hood name', srid);
+
+SELECT create_closest_point_table(srid);
+```
