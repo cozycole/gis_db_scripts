@@ -44,3 +44,24 @@ CREATE OR REPLACE FUNCTION delete_distant_pairs(srid int, distance numeric)
 			USING srid, distance;
 	END;
 $$ LANGUAGE plpgsql;
+
+-- Delete any addr:req pairings where the line between the two points
+-- intersects multiple buildings (i.e. the line of sight is blocked by another building)
+CREATE OR REPLACE FUNCTION delete_double_intersect()
+	RETURNS void AS $$
+	WITH addr_req_intersects as (
+		SELECT addr_gid, req_gid, count(*) 
+		FROM addr_req_point_join as arpj
+		JOIN request_points as rp
+		ON rp.gid = arpj.req_gid
+		JOIN addresses as a
+		ON a.gid = arpj.addr_gid
+		JOIN buildings as b
+		ON ST_Intersects(b.geom, ST_MakeLine(a.geom, rp.geom))
+		GROUP BY addr_gid, req_gid
+		HAVING count(*) > 1
+	)
+	DELETE FROM addr_req_point_join as arpj
+	USING addr_req_intersects as ari
+	WHERE (ari.addr_gid = arpj.addr_gid AND ari.req_gid = arpj.req_gid);
+$$ LANGUAGE SQL;

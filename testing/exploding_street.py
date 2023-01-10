@@ -6,8 +6,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
-
 class TestStreetExplode(unittest.TestCase):
     conn = pg.connect(
         user=os.getenv("POSTGRES_USER"),
