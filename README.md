@@ -186,15 +186,27 @@ DELETE from request_points as rp
 USING point_intersecting as pi
 WHERE pi.delete_gid = rp.gid;
 ```
-
+### Pair Req Points to Addresses
 Now we want to pair the address points to the req_points.
 This is to further filter the request points such that the table only contains request_points the crawler will actually use.
 
 Load **tmp_close_req_points.sql** to load the function that will create a table that contains the closest request point per address.
-This includes the universal closest point as well as the closest req point closest on the same street as the address.
+This includes the universal closest point as well as the closest req point on the same street as the address.
 ```
 -- First test to ensure indexes are functioning properly
 SELECT test_find_closest_points('hood name', srid);
 
 SELECT create_closest_point_table(srid);
+CREATE INDEX tmp_close_point_req_gid_idx ON tmp_closest_req_points(req_gid);
+CREATE INDEX tmp_close_point_req_gid_on_st_idx ON tmp_closest_req_points(req_gid_on_st);
+```
+
+We now have a table that contains at most two of the closest points to each address.
+We want to now find the surrounding points to these closest points (i.e. ones within 31ft radius).
+We then add all request_point:address pairings to the addr_req_point_join table using functions in **addr_req_join.sql**
+```
+-- Using the tmp_closest_req_points, it adds all points within the radius of the points within it.
+SELECT insert_addr_req_pairings(srid, radius);
+-- Then filter the pairings
+SELECT delete_distant_pairs(srid, distance);
 ```
