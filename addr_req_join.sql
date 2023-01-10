@@ -65,3 +65,19 @@ CREATE OR REPLACE FUNCTION delete_double_intersect()
 	USING addr_req_intersects as ari
 	WHERE (ari.addr_gid = arpj.addr_gid AND ari.req_gid = arpj.req_gid);
 $$ LANGUAGE SQL;
+
+-- We are deleting all req_points that do not have a pairing to address
+-- in addr_req_pont_join
+CREATE OR REPLACE FUNCTION delete_non_paired_reqs()
+	RETURNS void AS $$
+		WITH req_points_to_delete AS (
+			SELECT * 
+			FROM request_points as rp
+			LEFT JOIN (SELECT DISTINCT req_gid FROM addr_req_point_join) as reqs
+			ON rp.gid = reqs.req_gid
+			WHERE reqs.req_gid is null
+		)
+		DELETE FROM request_points as rp
+		USING req_points_to_delete as rpd
+		WHERE rpd.gid = rp.gid;
+$$ LANGUAGE SQL;
