@@ -1,9 +1,12 @@
+-- Creates all GIS related tables for StreetView AI
+-- Cole T. 1/3/23  
+
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE addresses (
     gid SERIAL PRIMARY KEY,
     address VARCHAR NOT NULL,
-    geom GEOMETRY NOT NULL
+    geom GEOMETRY NOT NULL,
 );
 
 CREATE TABLE streets (
@@ -25,8 +28,7 @@ CREATE TABLE buildings (
 );
 
 CREATE TABLE pano_metadata (
-    gid SERIAL PRIMARY KEY,
-    pano_id VARCHAR NOT NULL UNIQUE,
+    pano_id VARCHAR PRIMARY KEY,
     capture_date VARCHAR,
     geom GEOMETRY NOT NULL,
     heading NUMERIC(7,4),
@@ -36,18 +38,36 @@ CREATE TABLE pano_metadata (
 CREATE TABLE request_points (
     gid SERIAL PRIMARY KEY,
     street_gid INT NOT NULL,
-    pano_gid INT,
+    pano_id VARCHAR,
     geom GEOMETRY NOT NULL,
     requested BOOLEAN,
     CONSTRAINT fk_street
         FOREIGN KEY(street_gid)
             REFERENCES streets(gid)
-            ON DELETE SET NULL
+            ON DELETE CASCADE, 
             ON UPDATE CASCADE,
     CONSTRAINT fk_pano
-        FOREIGN KEY(pano_gid)
-            REFERENCES pano_metadata(gid)
+        FOREIGN KEY(pano_id)
+            REFERENCES pano_metadata(pano_id)
             ON DELETE SET NULL
+            ON UPDATE CASCADE
+);
+
+-- Table for the many to many relationship
+-- between addresses and request points
+CREATE TABLE addr_req_point_join(
+    req_gid INT ,
+    addr_gid INT,
+    CONSTRAINT addr_req_primary_key PRIMARY KEY (req_gid, addr_gid),
+    CONSTRAINT req_gid_fk 
+        FOREIGN KEY (req_gid)
+            REFERENCES request_points(gid)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+    CONSTRAINT addr_gid_fk
+        FOREIGN KEY (addr_gid)
+            REFERENCES addresses(gid)
+            ON DELETE CASCADE
             ON UPDATE CASCADE
 );
 
