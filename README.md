@@ -5,18 +5,19 @@
 ### Download from city/state GIS source
 
 To begin crawling a new city, you need the following GIS datasets of the region:
-- Neighborhood boundaries (optional, helps divide region into segments)
-- Building geometries
-- Street network lines
+- Neighborhood polygons (optional, helps divide region into segments)
+- Building polygons
+- Street network linestrings
 - Address points
 
 **If neighborhood data is not provided, create desired polygons in QGIS** 
 
 ## Create a new database
 
-Make the name be city\_state ex: detroit\_mi\_ai)
-- Connect to postgres database (psql postgres;) 
+Declare the name to be city\_state ex: detroit\_mi)
+- Connect to the postgres user database (psql -d postgres;) 
 - Create a new database (CREATE DATABASE detroit\_mi;)
+- Connect to the new database
 - Add PostGIS extension (CREATE EXTENSION POSTGIS;)
 
 ### Import to Postgres
