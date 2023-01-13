@@ -207,6 +207,13 @@ We then add all request_point:address pairings to the addr_req_point_join table 
 ```
 -- Using the tmp_closest_req_points, it adds all points within the radius of the points within it.
 SELECT insert_addr_req_pairings(srid, radius);
--- Then filter the pairings
+-- Then filter the pairings based on distance and building intersections
 SELECT delete_distant_pairs(srid, distance);
+SELECT delete_double_intersect();
+```
+
+Then finally filter the req_point table, since we are only concerned with req_points that are present in the addr:req_point table.
+
+```
+SELECT delete_non_paired_reqs();
 ```

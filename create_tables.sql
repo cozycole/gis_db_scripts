@@ -40,7 +40,7 @@ CREATE TABLE request_points (
     street_gid INT NOT NULL,
     pano_id VARCHAR,
     geom GEOMETRY NOT NULL,
-    requested BOOLEAN,
+    status VARCHAR,
     CONSTRAINT fk_street
         FOREIGN KEY(street_gid)
             REFERENCES streets(gid)
